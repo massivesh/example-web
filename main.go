@@ -42,13 +42,7 @@ func main() {
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /{$}", home)
-	mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, r *http.Request) {
-		if !healthy.Load() {
-			http.Error(w, "starting or shutting down", http.StatusServiceUnavailable)
-			return
-		}
-		w.Write([]byte("ok"))
-	})
+	mux.HandleFunc("GET /healthz", healthz)
 	mux.HandleFunc("GET /api/info", func(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, 200, info(r))
 	})
@@ -212,6 +206,16 @@ var page = template.Must(template.New("home").Parse(`<!doctype html>
 func home(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	page.Execute(w, info(r))
+}
+
+// healthz is the health_path minicoolify checks before and during a deploy.
+// It must stay cheap: no database or external calls.
+func healthz(w http.ResponseWriter, r *http.Request) {
+	if !healthy.Load() {
+		http.Error(w, "starting or shutting down", http.StatusServiceUnavailable)
+		return
+	}
+	writeJSON(w, 200, map[string]string{"status": "ok", "commit": commit})
 }
 
 func writeJSON(w http.ResponseWriter, status int, v any) {

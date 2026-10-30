@@ -12,7 +12,9 @@ The home page shows which **replica** and **commit** answered, the app's **versi
 | `GET /slow?ms=1500` | answers after a delay (random 0.2–2s without `ms`) |
 | `GET /status/{code}` | answers with any status; 5xx also logs an error to stderr |
 | `GET /flaky` | fails (500) about one request in five |
-| `GET /healthz` | 200 when ready, 503 while starting or shutting down |
+| `GET /healthz` | 200 with `{"status":"ok","commit":"<SOURCE_COMMIT>"}` when ready, 503 while starting or shutting down |
+
+`/healthz` is cheap and makes no dependency calls (no database, no external services), and it is the service's `health_path`, which minicoolify checks before sending traffic to a new replica.
 
 It listens on `$PORT` (minicoolify sets it from the app's `port`; default 8000), logs JSON to stdout (errors to stderr) with each request's `X-Request-Id`, and on SIGTERM stops taking new requests and finishes the ones in flight.
 
